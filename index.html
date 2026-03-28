@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Word Passport | 拼字護照</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#8ec5fc">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Word Passport">
+<link rel="apple-touch-icon" href="icon-192.png">
     <style>
         :root { 
             --p-width: 320px; 
@@ -725,6 +731,15 @@ document.getElementById('pw-input').addEventListener('input', function () {
 // 頁面載入：封面背景
 // ═══════════════════════════════════════════════════════
 applyBackground(true);
+
+// PWA Service Worker 註冊
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(() => console.log('Service Worker registered'))
+            .catch(err => console.log('Service Worker failed:', err));
+    });
+}
 </script>
 </body>
 </html>
