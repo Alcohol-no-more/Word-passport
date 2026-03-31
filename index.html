@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-   <title>Word Passport | 拼字護照</title>
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#000000">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Word Passport">
-<link rel="apple-touch-icon" href="./icon-192.png">
+    <title>Word Passport | 拼字護照</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Word Passport">
+    <link rel="apple-touch-icon" href="./icon-192.png">
     <style>
         :root { 
             --p-width: 320px; 
@@ -25,12 +25,12 @@
 
         /* ── 背景系統 ── */
         .bg-layer {
-    position: fixed; inset: 0; z-index: 0;
-    background-size: cover; background-position: center;
-    transition: opacity 0.8s ease;
-    pointer-events: none;
-    background-color: #000;
-}
+            position: fixed; inset: 0; z-index: 0;
+            background-size: cover; background-position: center;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+            background-color: #000;
+        }
         #bg-a { opacity: 1; }
         #bg-b { opacity: 0; }
 
@@ -89,8 +89,10 @@
             margin-top: 10px; text-decoration: underline; display: block; width: 100%;
         }
         .back-btn:hover { opacity: 1; }
-        #step-count      { display: block; }
-        #step-difficulty { display: none; }
+
+        /* 步驟顯示控制 */
+        .setup-step { display: none; }
+        .setup-step.active { display: block; }
 
         /* 題數不足警告 */
         #count-warning {
@@ -100,19 +102,41 @@
         }
         #count-warning.show { opacity: 1; }
 
+        /* 無限模式分隔線 */
+        .divider {
+            display: flex; align-items: center; margin: 16px 0 10px 0;
+            color: #fff; opacity: 0.4; font-size: 9px; letter-spacing: 3px;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.3);
+        }
+        .divider::before { margin-right: 12px; }
+        .divider::after  { margin-left: 12px; }
+
+        /* 無限模式按鈕特殊樣式 */
+        .infinite-btn {
+            width: 100%; padding: 14px; margin: 6px 0;
+            border: 1px solid rgba(255,200,100,0.5);
+            background: rgba(255,200,100,0.1);
+            color: #fff; border-radius: 12px;
+            cursor: pointer; font-size: 13px; letter-spacing: 2px;
+            transition: 0.3s; box-sizing: border-box;
+        }
+        .infinite-btn:hover { background: rgba(255,200,100,0.9); color: #333; }
+
         /* ── 遊戲主畫面 ── */
         #game-view { 
             display: none; 
             width: 100%; 
-            height: 100svh;          /* 修復D：svh 扣除手機鍵盤高度 */
-            min-height: 100%;        /* fallback for older browsers */
+            height: 100svh;
+            min-height: 100%;
             flex-direction: column; 
             justify-content: center; 
             align-items: center; 
             position: relative; 
             z-index: 2;
             box-sizing: border-box;
-            padding: 20px 0;         /* 避免內容貼邊 */
+            padding: 20px 0;
         }
         #bg-overlay { 
             position: absolute; inset: 0; z-index: -1;
@@ -122,7 +146,6 @@
         .game-content { 
             width: var(--p-width); 
             text-align: center;
-            /* 修復D：內容區域可以在鍵盤彈出時滾動 */
             max-height: 100%;
             overflow-y: auto;
             overflow-x: hidden;
@@ -176,6 +199,15 @@
         .skip-btn:hover { opacity: 1; }
         #correct-tally { font-size: 11px; letter-spacing: 1px; opacity: 0.6; }
 
+        /* ── 無限模式：即時統計列 ── */
+        #infinite-stats {
+            display: none;
+            margin-top: 12px;
+            font-size: 10px;
+            letter-spacing: 1px;
+            opacity: 0.5;
+        }
+
         /* 答對綠色閃爍動畫 */
         @keyframes correctFlash {
             0%   { background: rgba(0,220,100,0.35); }
@@ -201,6 +233,11 @@
             border: none; border-radius: 30px; cursor: pointer; letter-spacing: 2px; 
         }
 
+        /* ── 無限模式結算額外資訊 ── */
+        #end-extra {
+            margin-top: 12px; font-size: 12px; color: #999; letter-spacing: 1px;
+        }
+
         /* words.js 載入失敗提示 */
         #db-error {
             display: none;
@@ -222,7 +259,7 @@
     <div id="setup-overlay"></div>
     <div id="img-status"></div>
 
-    <!-- 修復B：words.js 載入失敗提示 -->
+    <!-- words.js 載入失敗提示 -->
     <div id="db-error">
         <p style="font-size:24px;margin-bottom:16px;">⚠️</p>
         <p>FAILED TO LOAD WORD DATABASE</p>
@@ -233,22 +270,46 @@
         ">RELOAD</button>
     </div>
 
-    <!-- 封面 -->
+    <!-- ══════════ 封面 ══════════ -->
     <div id="setup-screen">
         <div class="glass-card">
             <p style="font-size:10px;letter-spacing:5px;color:#fff;margin-bottom:10px;opacity:0.8;">VISA APPLICATION</p>
             <h1 class="setup-logo">Word Passport</h1>
 
-            <div id="step-count">
+            <!-- STEP 1：模式選擇 -->
+            <div id="step-mode" class="setup-step active">
+                <p class="step-title">SELECT MODE</p>
+                <button class="level-btn" onclick="selectMode('stamp')">🛂 STAMP MODE</button>
+                <p style="font-size:9px;color:#fff;opacity:0.4;margin:2px 0 10px 0;letter-spacing:1px;">Fixed questions · 80% to pass</p>
+                <button class="infinite-btn" onclick="selectMode('infinite')">♾️ INFINITE MODE</button>
+                <p style="font-size:9px;color:#fff;opacity:0.4;margin:2px 0 0 0;letter-spacing:1px;">Endless · track your streak</p>
+            </div>
+
+            <!-- STEP 2a：Stamp 模式 → 選題數 -->
+            <div id="step-count" class="setup-step">
                 <p class="step-title">SELECT STAMPS</p>
                 <button class="level-btn" onclick="selectCount(5)">5 STAMPS</button>
                 <button class="level-btn" onclick="selectCount(10)">10 STAMPS</button>
                 <button class="level-btn" onclick="selectCount(15)">15 STAMPS</button>
                 <button class="level-btn" onclick="selectCount(30)">30 STAMPS</button>
                 <p style="font-size:9px;color:#fff;opacity:0.5;margin-top:20px;letter-spacing:1px;">80% ACCURACY REQUIRED TO PASS</p>
+                <button class="back-btn" onclick="goTo('step-mode')">← BACK</button>
             </div>
 
-            <div id="step-difficulty">
+            <!-- STEP 2b：Infinite 模式 → 選難度 -->
+            <div id="step-infinite-diff" class="setup-step">
+                <p class="step-title">SELECT DIFFICULTY</p>
+                <button class="diff-btn" onclick="startInfinite('easy')">
+                    <span>☀️ EASY</span><span class="diff-tag">HINTS SHOWN</span>
+                </button>
+                <button class="diff-btn" onclick="startInfinite('hard')">
+                    <span>🔥 HARD</span><span class="diff-tag">3 ERRORS → HINT</span>
+                </button>
+                <button class="back-btn" onclick="goTo('step-mode')">← BACK</button>
+            </div>
+
+            <!-- STEP 3：Stamp 模式 → 選字母難度 -->
+            <div id="step-difficulty" class="setup-step">
                 <p class="step-title">SELECT DIFFICULTY</p>
                 <button class="diff-btn" onclick="preStart('easy')">
                     <span>EASY</span><span class="diff-tag">3–5 LETTERS</span>
@@ -260,12 +321,12 @@
                     <span>HARD</span><span class="diff-tag">9+ LETTERS</span>
                 </button>
                 <div id="count-warning"></div>
-                <button class="back-btn" onclick="goBackToCount()">← BACK</button>
+                <button class="back-btn" onclick="goTo('step-count')">← BACK</button>
             </div>
         </div>
     </div>
 
-    <!-- 遊戲主畫面 -->
+    <!-- ══════════ 遊戲主畫面 ══════════ -->
     <div id="game-view">
         <div id="bg-overlay"></div>
         <div class="game-content">
@@ -278,14 +339,20 @@
                 <button class="skip-btn" onclick="skipLevel()">SKIP THIS STAMP</button>
                 <div id="correct-tally">SOLVED: 0</div>
             </div>
+            <div id="infinite-stats">
+                STREAK: <span id="inf-streak">0</span> &nbsp;·&nbsp; 
+                BEST: <span id="inf-best">0</span> &nbsp;·&nbsp;
+                TOTAL: <span id="inf-total">0</span>
+            </div>
         </div>
     </div>
 
-    <!-- 結算畫面 -->
+    <!-- ══════════ 結算畫面 ══════════ -->
     <div id="end-screen">
         <p id="end-subtitle" style="letter-spacing:8px;color:#aaa;font-size:12px;"></p>
         <h1 id="end-title" style="font-family:serif;font-size:45px;margin:10px 0;"></h1>
         <p id="end-msg" style="color:#666;line-height:1.6;max-width:300px;"></p>
+        <p id="end-extra"></p>
         <button class="end-btn" onclick="resetToHome()">PLAY AGAIN</button>
     </div>
 
@@ -293,7 +360,7 @@
 <script>
 
 // ═══════════════════════════════════════════════════════
-// 修復B：檢查 words.js 是否成功載入
+// 檢查 words.js
 // ═══════════════════════════════════════════════════════
 (function checkWordDb() {
     if (typeof wordDb === 'undefined' || !wordDb) {
@@ -301,6 +368,18 @@
         document.getElementById('setup-screen').style.display = 'none';
     }
 })();
+
+// ═══════════════════════════════════════════════════════
+// Fisher-Yates 洗牌（取代有偏差的 sort(random)）
+// ═══════════════════════════════════════════════════════
+function fisherYatesShuffle(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
 
 // ═══════════════════════════════════════════════════════
 // 背景系統常數
@@ -332,7 +411,7 @@ const MAX_RETRIES       = 3;
 let totalLevels     = 0;
 let currentIdx      = 0;
 let solvedCount     = 0;
-let skippedCount    = 0;   // 修復H：記錄跳過題數
+let skippedCount    = 0;
 let errorCount      = 0;
 let sessionWords    = [];
 let isAnimating     = false;
@@ -341,31 +420,149 @@ let chosenCount     = 0;
 let activeBgLayer   = 'a';
 let preloadedNext   = null;
 let currentBgIsDark = false;
-let bgLocked        = false;   // 修復A：背景切換鎖
+let bgLocked        = false;
+
+// ── 無限模式狀態 ──
+let gameMode          = 'stamp';     // 'stamp' | 'infinite'
+let infiniteDifficulty = 'hard';     // 'easy' | 'hard'
+let infinitePool      = [];
+let infinitePoolIdx   = 0;
+let infStreak         = 0;
+let infBestStreak     = 0;
+let infTotal          = 0;
 
 // ═══════════════════════════════════════════════════════
 // 封面導航
 // ═══════════════════════════════════════════════════════
-function selectCount(num) {
-    chosenCount = num;
-    document.getElementById('step-count').style.display      = 'none';
-    document.getElementById('step-difficulty').style.display = 'block';
+function goTo(stepId) {
+    document.querySelectorAll('.setup-step').forEach(el => el.classList.remove('active'));
+    document.getElementById(stepId).classList.add('active');
     const warning = document.getElementById('count-warning');
     warning.innerText = '';
     warning.classList.remove('show');
 }
 
-function goBackToCount() {
-    document.getElementById('step-difficulty').style.display = 'none';
-    document.getElementById('step-count').style.display      = 'block';
+function selectMode(mode) {
+    gameMode = mode;
+    if (mode === 'stamp') {
+        goTo('step-count');
+    } else {
+        goTo('step-infinite-diff');
+    }
+}
+
+function selectCount(num) {
+    chosenCount = num;
+    goTo('step-difficulty');
 }
 
 // ═══════════════════════════════════════════════════════
-// 開始遊戲
+// 無限模式：建立打亂的完整題庫
+// ═══════════════════════════════════════════════════════
+function buildInfinitePool() {
+    const all = [
+        ...(wordDb.easy   || []),
+        ...(wordDb.medium || []),
+        ...(wordDb.hard   || [])
+    ];
+    infinitePool    = fisherYatesShuffle(all);
+    infinitePoolIdx = 0;
+}
+
+function getNextInfiniteWord() {
+    // 如果用完了，重新洗牌
+    if (infinitePoolIdx >= infinitePool.length) {
+        infinitePool    = fisherYatesShuffle(infinitePool);
+        infinitePoolIdx = 0;
+    }
+    return infinitePool[infinitePoolIdx++];
+}
+
+// ═══════════════════════════════════════════════════════
+// 開始無限模式
+// ═══════════════════════════════════════════════════════
+function startInfinite(diff) {
+    infiniteDifficulty = diff;
+
+    const all = [
+        ...(wordDb.easy   || []),
+        ...(wordDb.medium || []),
+        ...(wordDb.hard   || [])
+    ];
+
+    if (all.length === 0) {
+        const warning = document.getElementById('count-warning');
+        warning.innerText = '★ NO WORDS AVAILABLE';
+        warning.classList.add('show');
+        return;
+    }
+
+    gameMode    = 'infinite';
+    infStreak   = 0;
+    infBestStreak = 0;
+    infTotal    = 0;
+    errorCount  = 0;
+    isAnimating = false;
+    bgLocked    = false;
+    gameActive  = true;
+
+    buildInfinitePool();
+
+    const diffLabel = diff === 'easy' ? '♾️ INFINITE · EASY' : '♾️ INFINITE · HARD';
+    document.getElementById('difficulty-indicator').innerText = diffLabel;
+    document.getElementById('infinite-stats').style.display = 'block';
+
+    const setup = document.getElementById('setup-screen');
+    setup.style.opacity = '0';
+    document.getElementById('setup-overlay').style.background = 'rgba(0,0,0,0)';
+
+    setTimeout(() => {
+        setup.style.display = 'none';
+        document.getElementById('game-view').style.display = 'flex';
+        loadInfiniteLevel();
+    }, 500);
+}
+
+function loadInfiniteLevel() {
+    const data = getNextInfiniteWord();
+    errorCount  = 0;
+    isAnimating = false;
+
+    applyBackground(false);
+
+    document.getElementById('level-indicator').innerText = '♾️ INFINITE';
+    document.getElementById('correct-tally').innerText   = `SOLVED: ${infTotal}`;
+    document.getElementById('scramble-box').innerText    = scrambleWord(data.w);
+
+    // 更新統計
+    document.getElementById('inf-streak').innerText = infStreak;
+    document.getElementById('inf-best').innerText   = infBestStreak;
+    document.getElementById('inf-total').innerText   = infTotal;
+
+    const hint = document.getElementById('hint-text');
+    hint.innerText = data.h;
+
+    // Easy = 直接顯示提示，Hard = 隱藏（錯3次才顯示）
+    if (infiniteDifficulty === 'easy') {
+        hint.classList.add('visible');
+    } else {
+        hint.classList.remove('visible');
+    }
+
+    // 儲存當前題目到臨時變數
+    sessionWords = [data];
+    currentIdx   = 0;
+
+    const input       = document.getElementById('pw-input');
+    input.value       = '';
+    input.placeholder = `${data.w.length} LETTERS`;
+    setTimeout(() => input.focus(), 100);
+}
+
+// ═══════════════════════════════════════════════════════
+// 開始 Stamp 模式
 // ═══════════════════════════════════════════════════════
 function preStart(difficulty) {
-
-    // 修復C：防護空題庫
     const pool = (typeof wordDb !== 'undefined' && wordDb[difficulty]) 
                   ? wordDb[difficulty] 
                   : [];
@@ -374,24 +571,22 @@ function preStart(difficulty) {
         const warning = document.getElementById('count-warning');
         warning.innerText = '★ NO WORDS AVAILABLE FOR THIS LEVEL';
         warning.classList.add('show');
-        return;   // 停止，不進入遊戲
+        return;
     }
 
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    // ★ Fisher-Yates 取代有偏差的 sort(random)
+    const shuffled = fisherYatesShuffle(pool);
     sessionWords   = shuffled.slice(0, chosenCount);
     totalLevels    = sessionWords.length;
 
-    // 修復H：重置跳過計數
     skippedCount = 0;
 
-    // 題數不足警告
     if (totalLevels < chosenCount) {
         const warning = document.getElementById('count-warning');
         warning.innerText = `★ ONLY ${totalLevels} WORDS AVAILABLE IN THIS LEVEL`;
         warning.classList.add('show');
     }
 
-    // 修復E：防止 chosenCount = 0 進入遊戲
     if (totalLevels === 0) {
         const warning = document.getElementById('count-warning');
         warning.innerText = '★ NO WORDS AVAILABLE';
@@ -399,6 +594,7 @@ function preStart(difficulty) {
         return;
     }
 
+    gameMode    = 'stamp';
     currentIdx  = 0;
     solvedCount = 0;
     errorCount  = 0;
@@ -412,6 +608,7 @@ function preStart(difficulty) {
         hard:   'HARD · 9+ LETTERS'
     };
     document.getElementById('difficulty-indicator').innerText = diffLabel[difficulty] || '';
+    document.getElementById('infinite-stats').style.display = 'none';
 
     const setup = document.getElementById('setup-screen');
     setup.style.opacity = '0';
@@ -419,8 +616,6 @@ function preStart(difficulty) {
 
     setTimeout(() => {
         setup.style.display = 'none';
-        document.getElementById('step-difficulty').style.display = 'none';
-        document.getElementById('step-count').style.display      = 'block';
         const warning = document.getElementById('count-warning');
         warning.innerText = '';
         warning.classList.remove('show');
@@ -439,10 +634,7 @@ function getPicsumUrl(seed) {
 function loadImage(url) {
     return new Promise((resolve, reject) => {
         const img     = new Image();
-        const timeout = setTimeout(() => {
-            img.src = '';
-            reject(new Error('timeout'));
-        }, 5000);
+        const timeout = setTimeout(() => { img.src = ''; reject(new Error('timeout')); }, 5000);
         img.onload  = () => { clearTimeout(timeout); resolve(url); };
         img.onerror = () => { clearTimeout(timeout); reject(new Error('error')); };
         img.src = url;
@@ -468,7 +660,6 @@ function showImgStatus(text) {
     el.classList.toggle('show', text !== '');
 }
 
-// 修復A：加入 bgLocked 防止重複執行
 async function applyBackground(isSetup = false) {
     if (bgLocked) return;
     bgLocked = true;
@@ -503,7 +694,6 @@ async function applyBackground(isSetup = false) {
             preloadNextImage();
         }
     } finally {
-        // 修復F：無論成功失敗，800ms 後（配合 transition）解鎖
         setTimeout(() => { bgLocked = false; }, 800);
     }
 }
@@ -567,13 +757,19 @@ function applyTextAndInputStyle(isDark) {
 }
 
 // ═══════════════════════════════════════════════════════
-// 工具
+// 工具：scrambleWord（也用 Fisher-Yates）
 // ═══════════════════════════════════════════════════════
 function scrambleWord(word) {
     if (word.length <= 1) return word;
-    let result, attempts = 0;
+    let attempts = 0;
+    let chars, result;
     do {
-        result = word.split('').sort(() => Math.random() - 0.5).join('');
+        chars = word.split('');
+        for (let i = chars.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [chars[i], chars[j]] = [chars[j], chars[i]];
+        }
+        result = chars.join('');
         attempts++;
     } while (result === word && attempts < 20);
     if (result === word) result = word[1] + word.slice(2) + word[0];
@@ -581,10 +777,9 @@ function scrambleWord(word) {
 }
 
 // ═══════════════════════════════════════════════════════
-// 載入關卡
+// 載入 Stamp 關卡
 // ═══════════════════════════════════════════════════════
 function loadLevel() {
-    // 修復C：防止 sessionWords 為空時 crash
     if (!sessionWords || sessionWords.length === 0) {
         finishGame();
         return;
@@ -615,9 +810,16 @@ function loadLevel() {
 // ═══════════════════════════════════════════════════════
 function skipLevel() {
     if (!gameActive) return;
-    skippedCount++;   // 修復H：記錄跳過
-    currentIdx++;
-    checkProgress();
+
+    if (gameMode === 'infinite') {
+        // 無限模式：skip = 斷 streak，但不結束
+        infStreak = 0;
+        loadInfiniteLevel();
+    } else {
+        skippedCount++;
+        currentIdx++;
+        checkProgress();
+    }
 }
 
 function checkProgress() {
@@ -628,6 +830,28 @@ function checkProgress() {
     }
 }
 
+// ═══════════════════════════════════════════════════════
+// 無限模式：結束（手動按 STOP）
+// ═══════════════════════════════════════════════════════
+function stopInfinite() {
+    gameActive    = false;
+    preloadedNext = null;
+    bgLocked      = false;
+
+    document.getElementById('game-view').style.display = 'none';
+    document.getElementById('end-screen').style.display = 'flex';
+
+    document.getElementById('end-subtitle').innerText = 'SESSION COMPLETE';
+    document.getElementById('end-title').innerText    = 'Well Played.';
+    document.getElementById('end-msg').innerHTML =
+        `Total solved: <b>${infTotal}</b><br>Best streak: <b>${infBestStreak}</b>`;
+    document.getElementById('end-extra').innerText =
+        infiniteDifficulty === 'easy' ? 'MODE: INFINITE · EASY' : 'MODE: INFINITE · HARD';
+}
+
+// ═══════════════════════════════════════════════════════
+// Stamp 模式結算
+// ═══════════════════════════════════════════════════════
 function finishGame() {
     gameActive    = false;
     preloadedNext = null;
@@ -638,7 +862,6 @@ function finishGame() {
     const passMark = Math.ceil(totalLevels * 0.8);
     document.getElementById('end-screen').style.display = 'flex';
 
-    // 修復H：結算顯示跳過題數
     const statsLine = skippedCount > 0
         ? `Solved <b>${solvedCount}</b> · Skipped <b>${skippedCount}</b> · Total ${totalLevels}`
         : `Successfully solved <b>${solvedCount}</b> out of ${totalLevels}`;
@@ -654,6 +877,7 @@ function finishGame() {
         document.getElementById('end-msg').innerHTML =
             `${statsLine}<br>You need at least <b>${passMark}</b> to pass the customs.`;
     }
+    document.getElementById('end-extra').innerText = '';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -665,6 +889,7 @@ function resetToHome() {
     document.getElementById('setup-screen').style.display = 'flex';
     document.getElementById('setup-screen').style.opacity = '1';
     document.getElementById('pw-input').value             = '';
+    document.getElementById('infinite-stats').style.display = 'none';
 
     const bgA = document.getElementById('bg-a');
     const bgB = document.getElementById('bg-b');
@@ -689,6 +914,16 @@ function resetToHome() {
     isAnimating  = false;
     gameActive   = false;
 
+    // 無限模式重置
+    infStreak     = 0;
+    infBestStreak = 0;
+    infTotal      = 0;
+    infinitePool  = [];
+    infinitePoolIdx = 0;
+
+    // 回到模式選擇
+    goTo('step-mode');
+
     applyBackground(true);
 }
 
@@ -704,13 +939,20 @@ document.getElementById('pw-input').addEventListener('input', function () {
 
     if (val.length === target.length) {
         if (val === target) {
-            // 修復G：答對綠色閃爍反饋
+            // 答對閃爍
             this.classList.add('correct-flash');
             setTimeout(() => this.classList.remove('correct-flash'), 400);
 
-            solvedCount++;
-            currentIdx++;
-            checkProgress();
+            if (gameMode === 'infinite') {
+                infTotal++;
+                infStreak++;
+                if (infStreak > infBestStreak) infBestStreak = infStreak;
+                loadInfiniteLevel();
+            } else {
+                solvedCount++;
+                currentIdx++;
+                checkProgress();
+            }
         } else {
             errorCount++;
             isAnimating = true;
@@ -720,12 +962,47 @@ document.getElementById('pw-input').addEventListener('input', function () {
                 this.value  = '';
                 isAnimating = false;
             }, 400);
-            if (errorCount >= 3) {
+
+            // Hard 模式：錯 3 次顯示提示
+            if (gameMode === 'infinite' && infiniteDifficulty === 'hard' && errorCount >= 3) {
+                document.getElementById('hint-text').classList.add('visible');
+            }
+            // Stamp 模式：錯 3 次顯示提示
+            if (gameMode === 'stamp' && errorCount >= 3) {
                 document.getElementById('hint-text').classList.add('visible');
             }
         }
     }
 });
+
+// ═══════════════════════════════════════════════════════
+// 無限模式的 SKIP 按鈕文字 + STOP 按鈕
+// ═══════════════════════════════════════════════════════
+const skipBtn = document.querySelector('.skip-btn');
+const origSkipOnclick = skipBtn.onclick;
+
+// 動態更新 skip 按鈕
+function updateSkipButton() {
+    if (gameMode === 'infinite') {
+        skipBtn.textContent = 'SKIP (BREAK STREAK)';
+    } else {
+        skipBtn.textContent = 'SKIP THIS STAMP';
+    }
+}
+
+// 監聽 game-view 顯示時更新
+const observer = new MutationObserver(() => {
+    if (document.getElementById('game-view').style.display === 'flex') {
+        updateSkipButton();
+
+        // 無限模式：把 tally 改成 STOP 按鈕
+        const tally = document.getElementById('correct-tally');
+        if (gameMode === 'infinite') {
+            tally.innerHTML = '<span style="text-decoration:underline;cursor:pointer;opacity:0.7;" onclick="stopInfinite()">■ STOP</span>';
+        }
+    }
+});
+observer.observe(document.getElementById('game-view'), { attributes: true, attributeFilter: ['style'] });
 
 // ═══════════════════════════════════════════════════════
 // 頁面載入：封面背景
@@ -740,6 +1017,7 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.log('Service Worker failed:', err));
     });
 }
+
 </script>
 </body>
 </html>
